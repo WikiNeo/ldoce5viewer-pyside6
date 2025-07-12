@@ -1,0 +1,15 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Name=LDOCE5 Viewer
+Comment=Dictionary viewer for Longman Dictionary of Contemporary English 5th Edition
+Categories=Education;Dictionary;Office;
+Exec=ldoce5viewer
+Icon=ldoce5viewer
+Terminal=false
+Type=Application
+Version=1.0
+StartupNotify=true
+MimeType=application/x-ldoce5;
+Keywords=dictionary;english;ldoce;longman;
+

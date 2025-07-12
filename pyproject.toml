@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+#build-backend = "setuptools.build_meta"
+
+[project]
+name = "ldoce5viewer-pyside6"
+version = "0.1.0"
+description = "LDOCE5 Viewer - A dictionary viewer for Longman Dictionary of Contemporary English 5th Edition"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPLv3+" }
+authors = [{ name = "Taku Fukada", email = "naninunenor@gmail.com" }]
+classifiers = [
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Education",
+  "Programming Language :: Python",
+  "Operating System :: OS Independent",
+  "Topic :: Education",
+]
+dependencies = ["lxml", "pyside6>=6.5.0", "whoosh"]
+
+[project.scripts]
+ldoce5viewer = "ldoce5viewer.qtgui:run"
+
+[project.urls]
+Homepage = "http://hakidame.net/ldoce5viewer/"
+
+[tool.setuptools.packages.find]
+include = ["ldoce5viewer*"]
+
+[tool.setuptools.package-data]
+ldoce5viewer = ["static/**/*", "qtgui/resources/**/*", "qtgui/ui/**/*"]
