@@ -42,10 +42,6 @@ Alternatively, you can use `pip` with a virtual environment.
 For Arch Linux users, we provide an automated installation script:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ldoce5viewer-pyqt5.git
-cd ldoce5viewer-pyqt5
-
 # Run the installation script
 ./install-arch.sh
 ```
@@ -68,10 +64,6 @@ After installation, you can launch the application from:
 For development or if you want the latest features:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ldoce5viewer-pyqt5.git
-cd ldoce5viewer-pyqt5
-
 # Install dependencies
 uv sync
 
@@ -84,10 +76,6 @@ uv run python ldoce5viewer.py
 For other Linux distributions:
 
 ```bash
-# Clone and install
-git clone https://github.com/yourusername/ldoce5viewer-pyqt5.git
-cd ldoce5viewer-pyqt5
-
 # Install dependencies
 uv sync
 
@@ -137,22 +125,16 @@ sudo dnf install gstreamer1-plugins-base gstreamer1-plugins-good
 
 ### Setting Up Your Development Environment
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/yourusername/ldoce5viewer-pyqt5.git
-   cd ldoce5viewer-pyqt5
-   ```
-
-2. **Install Dependencies**
+1. **Install Dependencies**
    ```bash
    uv sync
    ```
 
-3. **Set Up Dictionary Data**
+2. **Set Up Dictionary Data**
    - Copy your LDOCE 5 data to `~/Documents/LDOEC5 Data/ldoce5.data/`
    - The directory should contain `.skn` files and other dictionary data
 
-4. **Run the Application**
+3. **Run the Application**
    ```bash
    uv run python ldoce5viewer.py
    ```
@@ -183,7 +165,7 @@ The project uses these main dependencies:
 ## Project Structure
 
 ```
-ldoce5viewer-pyqt5/
+ldoce5viewer-pyside6/
 ├── ldoce5viewer/           # Main application package
 │   ├── __init__.py
 │   ├── ldoce5/            # Dictionary data processing

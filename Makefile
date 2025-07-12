@@ -1,5 +1,6 @@
 PKG := ldoce5viewer
-PYTHON := python3
+PYTHON := uv run python3
+MAKE := /usr/bin/make
 
 build: precompile
 	$(PYTHON) ./setup.py build

@@ -12,7 +12,7 @@ __init__.py:
 
 # generate .py files from .ui files
 %.py: %.ui
-	pyside6-uic $< -o $@
+	uv run pyside6-uic $< -o $@
 
 .PYONY: clean
 clean:
