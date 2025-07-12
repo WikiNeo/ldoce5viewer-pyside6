@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
-from distutils.core import setup
+from setuptools import setup
 from ldoce5viewer import __version__
 
 def iter_static():

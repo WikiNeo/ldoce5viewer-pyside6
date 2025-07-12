@@ -6,9 +6,9 @@ import os.path
 from struct import unpack
 from zlib import decompress
 try:
-    from configparser import SafeConfigParser
-except:
-    from ConfigParser import SafeConfigParser
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser as ConfigParser
 
 try:
     import __builtin__
@@ -82,9 +82,12 @@ def is_ldoce5_dir(path):
 def list_files(data_root, archive_name):
 
     def _parse_cft(path):
-        cp = SafeConfigParser()
+        cp = ConfigParser()
         with open(path, 'r') as f:
-            cp.readfp(f)
+            try:
+                cp.read_file(f)
+            except AttributeError:
+                cp.readfp(f)
         r = {}
         r['offsets'] = {}
         offset = 0
