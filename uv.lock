@@ -8,8 +8,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "lxml" },
-    { name = "pyobjc-framework-avfoundation" },
-    { name = "pyobjc-framework-cocoa" },
+    { name = "pyobjc-framework-avfoundation", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
     { name = "pyside6" },
     { name = "setuptools" },
     { name = "whoosh" },
@@ -18,8 +18,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "lxml" },
-    { name = "pyobjc-framework-avfoundation", specifier = ">=11.1" },
-    { name = "pyobjc-framework-cocoa", specifier = ">=11.1" },
+    { name = "pyobjc-framework-avfoundation", marker = "sys_platform == 'darwin'", specifier = ">=11.1" },
+    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'", specifier = ">=11.1" },
     { name = "pyside6", specifier = ">=6.7.0,<6.9.0" },
     { name = "setuptools", specifier = ">=61.0" },
     { name = "whoosh" },

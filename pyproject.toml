@@ -1,6 +1,5 @@
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
-#build-backend = "setuptools.build_meta"
 
 [project]
 name = "ldoce5viewer-pyside6"
@@ -21,8 +20,8 @@ classifiers = [
 ]
 dependencies = [
     "lxml",
-    "pyobjc-framework-avfoundation>=11.1",
-    "pyobjc-framework-cocoa>=11.1",
+    "pyobjc-framework-avfoundation>=11.1; sys_platform == 'darwin'",
+    "pyobjc-framework-cocoa>=11.1; sys_platform == 'darwin'",
     "pyside6>=6.7.0,<6.9.0",
     "setuptools>=61.0",
     "whoosh",
