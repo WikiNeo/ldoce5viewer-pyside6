@@ -19,7 +19,14 @@ classifiers = [
   "Operating System :: OS Independent",
   "Topic :: Education",
 ]
-dependencies = ["lxml", "pyside6>=6.7.0,<6.9.0", "setuptools>=61.0", "whoosh"]
+dependencies = [
+    "lxml",
+    "pyobjc-framework-avfoundation>=11.1",
+    "pyobjc-framework-cocoa>=11.1",
+    "pyside6>=6.7.0,<6.9.0",
+    "setuptools>=61.0",
+    "whoosh",
+]
 
 [project.scripts]
 ldoce5viewer = "ldoce5viewer.qtgui:run"
