@@ -1,6 +1,7 @@
 """Error console"""
 
 from logging import StreamHandler
+import threading
 
 from PySide6.QtCore import QMutex, QRecursiveMutex, QObject, Signal
 from PySide6.QtWidgets import QPlainTextEdit
@@ -9,16 +10,17 @@ from PySide6.QtWidgets import QPlainTextEdit
 class MyStreamHandler(StreamHandler):
     def __init__(self):
         StreamHandler.__init__(self)
+        self.createLock()
 
     def createLock(self):
-        # must be Recursive (= reentrant)
-        self._mutex = QRecursiveMutex()
+        # Use standard threading lock for Python 3.13 compatibility
+        self.lock = threading.RLock()
 
     def acquire(self):
-        self._mutex.lock()
+        self.lock.acquire()
 
     def release(self):
-        self._mutex.unlock()
+        self.lock.release()
 
 
 class StdErrWrapper(QObject):

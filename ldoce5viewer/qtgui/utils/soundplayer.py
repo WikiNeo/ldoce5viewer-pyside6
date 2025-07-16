@@ -3,6 +3,7 @@ import os
 import abc
 from tempfile import NamedTemporaryFile, mkdtemp
 import logging
+import platform
 
 from PySide6.QtCore import *
 from ...utils.compat import range
@@ -269,12 +270,24 @@ class QtMultimediaBackend(Backend):
         # PySide6: Set up audio output
         try:
             self._audio_output = QtMultimedia.QAudioOutput()
+            # Set volume to ensure sound is audible
+            self._audio_output.setVolume(0.8)  # 80% volume
             self._player.setAudioOutput(self._audio_output)
-            print("DEBUG: QtMultimedia audio output configured")
+            print("DEBUG: QtMultimedia audio output configured with volume 0.8")
         except Exception as e:
             print(f"DEBUG: QtMultimedia audio output setup failed: {str(e)}")
         
+        # Connect to error signals for debugging
+        self._player.errorOccurred.connect(self._on_error)
+        self._player.mediaStatusChanged.connect(self._on_media_status_changed)
+        
         print("DEBUG: QtMultimediaBackend initialized")
+
+    def _on_error(self, error):
+        print(f"DEBUG: QtMultimedia error: {error}")
+
+    def _on_media_status_changed(self, status):
+        print(f"DEBUG: QtMultimedia media status: {status}")
 
     def _play(self):
         url = QUrl.fromLocalFile(self._path)
@@ -296,7 +309,19 @@ class QtMultimediaBackend(Backend):
         QTimer.singleShot(0, self._play)
 
     def close(self):
+        print("DEBUG: QtMultimediaBackend.close() called")
         self._player.stop()
+        # Properly clean up the audio output
+        if hasattr(self, '_audio_output'):
+            self._audio_output = None
+        # Clean up temporary directory
+        if hasattr(self, '_tmpdir'):
+            import shutil
+            try:
+                shutil.rmtree(self._tmpdir)
+                print("DEBUG: QtMultimedia temp directory cleaned up")
+            except:
+                pass
 
 
 class AppKitBackend(Backend):
@@ -327,18 +352,37 @@ class AppKitBackend(Backend):
             traceback.print_exc()
 
     def close(self):
-        self.stop()
+        print("DEBUG: AppKitBackend.close() called")
+        # Properly stop and release the NSSound object
+        if self._sound:
+            self._sound.stop()
+            # Release the NSSound object to prevent hanging
+            self._sound = None
+        print("DEBUG: AppKit NSSound properly released")
 
 
 def create_soundplayer(parent, temp_dir):
     backends = []
-    # Prioritize QtMultimedia over AppKit for better PySide6 compatibility
-    if QtMultimedia:
-        backends.append(QtMultimediaBackend)
-        print("DEBUG: QtMultimedia backend available")
-    if AppKit:
-        backends.append(AppKitBackend)
-        print("DEBUG: AppKit backend available")
+    
+    # On macOS (Darwin), prioritize AppKit backend over QtMultimedia
+    # for better reliability with Python 3.13
+    if platform.system() == "Darwin":
+        if AppKit:
+            backends.append(AppKitBackend)
+            print("DEBUG: AppKit backend available (prioritized on macOS)")
+        if QtMultimedia:
+            backends.append(QtMultimediaBackend)
+            print("DEBUG: QtMultimedia backend available")
+    else:
+        # On other platforms, prioritize QtMultimedia
+        if QtMultimedia:
+            backends.append(QtMultimediaBackend)
+            print("DEBUG: QtMultimedia backend available")
+        if AppKit:
+            backends.append(AppKitBackend)
+            print("DEBUG: AppKit backend available")
+    
+    # Add other backends in order of preference
     if mp3play:
         backends.append(WinMCIBackend)
         print("DEBUG: WinMCI backend available")

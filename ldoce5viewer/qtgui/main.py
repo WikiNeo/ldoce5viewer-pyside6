@@ -130,6 +130,9 @@ class MainWindow(QMainWindow):
         
         # Set main window reference for audio playback
         self._ui.webView.set_main_window(self)
+        
+        # Connect to application's aboutToQuit signal for proper cleanup
+        QApplication.instance().aboutToQuit.connect(self._onAboutToQuit)
 
         # Timers
         def _makeSingleShotTimer(slot):
@@ -179,6 +182,61 @@ class MainWindow(QMainWindow):
                 Cocoa.NSApplication.sharedApplication().delegate().class__(),
                 [applicationShouldHandleReopen_hasVisibleWindows_])
 
+    def _onAboutToQuit(self):
+        """Handle application quit - ensure all resources are properly cleaned up"""
+        print("DEBUG: Application about to quit - cleaning up resources")
+        
+        # Force cleanup of all lazy-loaded objects
+        self._cleanup_all_resources()
+        
+        # Ensure audio backend is properly closed
+        if _LAZY_SOUNDPLAYER in self._lazy:
+            try:
+                self._lazy[_LAZY_SOUNDPLAYER].close()
+                print("DEBUG: Sound player closed during app quit")
+            except:
+                pass
+        
+        # Ensure async searchers are shut down
+        if _LAZY_FTS_HWDPHR_ASYNC in self._lazy:
+            try:
+                self._lazy[_LAZY_FTS_HWDPHR_ASYNC].shutdown()
+                print("DEBUG: Async searcher shut down during app quit")
+            except:
+                pass
+        
+        print("DEBUG: Resource cleanup completed")
+
+    def _cleanup_all_resources(self):
+        """Comprehensive cleanup of all resources"""
+        lazy = self._lazy
+        
+        # Close advanced search window
+        if _LAZY_ADVSEARCH_WINDOW in lazy:
+            try:
+                lazy[_LAZY_ADVSEARCH_WINDOW].close()
+            except:
+                pass
+        
+        # Save configuration
+        try:
+            self._save_to_configfile()
+        except:
+            pass
+        
+        # Unload all searchers
+        try:
+            self._unload_searchers()
+        except:
+            pass
+        
+        # Close sound player
+        if _LAZY_SOUNDPLAYER in lazy:
+            try:
+                lazy[_LAZY_SOUNDPLAYER].close()
+            except:
+                pass
+
     def close(self):
         self._okToClose = True
         super(MainWindow, self).close()
@@ -187,14 +245,8 @@ class MainWindow(QMainWindow):
         if not objc:
             self._okToClose = True
 
-        lazy = self._lazy
         if self._okToClose:
-            if _LAZY_ADVSEARCH_WINDOW in lazy:
-                lazy[_LAZY_ADVSEARCH_WINDOW].close()
-            self._save_to_configfile()
-            self._unload_searchers()
-            if _LAZY_SOUNDPLAYER in lazy:
-                lazy[_LAZY_SOUNDPLAYER].close()
+            self._cleanup_all_resources()
             super(MainWindow, self).closeEvent(event)
         else:
             self.hide()
