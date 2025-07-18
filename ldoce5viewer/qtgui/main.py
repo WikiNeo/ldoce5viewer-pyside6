@@ -51,9 +51,9 @@ from datetime import datetime
 
 sql_create_words_table = """
     CREATE TABLE IF NOT EXISTS words (
-        id integer PRIMARY KEY,
-        word text NOT NULL,
-        created_at text
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        word TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
     );
 """
 
@@ -684,7 +684,7 @@ class MainWindow(QMainWindow):
 
     def _save_to_sqlite(self, word):
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.cur.execute("INSERT INTO words (word, created_at) values(?,?)", (word, now))
+        self.cur.execute("INSERT OR REPLACE INTO words (word, created_at) values(?,?)", (word, now))
         self.con.commit()
 
     def _onLoadFinished(self, succeeded):
