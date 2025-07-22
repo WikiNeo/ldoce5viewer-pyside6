@@ -51,9 +51,9 @@ from datetime import datetime
 
 sql_create_words_table = """
     CREATE TABLE IF NOT EXISTS words (
-        id integer PRIMARY KEY,
-        word text NOT NULL,
-        created_at text
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        word TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
     );
 """
 
@@ -682,9 +682,14 @@ class MainWindow(QMainWindow):
         config['zoomPower'] = max(-10, min(20, zoom_power))
         self._ui.webView.setZoomFactor(1.05 ** config['zoomPower'])
 
+    def _valid_word(self, word):
+        return len(word) > 1 and ' ' not in word
+
     def _save_to_sqlite(self, word):
+        if not self._valid_word(word):
+            return 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.cur.execute("INSERT INTO words (word, created_at) values(?,?)", (word, now))
+        self.cur.execute("INSERT OR REPLACE INTO words (word, created_at) values(?,?)", (word, now))
         self.con.commit()
 
     def _onLoadFinished(self, succeeded):
