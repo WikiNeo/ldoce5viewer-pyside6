@@ -273,43 +273,43 @@ class QtMultimediaBackend(Backend):
             # Set volume to ensure sound is audible
             self._audio_output.setVolume(0.8)  # 80% volume
             self._player.setAudioOutput(self._audio_output)
-            print("DEBUG: QtMultimedia audio output configured with volume 0.8")
+            _logger.debug("QtMultimedia audio output configured with volume 0.8")
         except Exception as e:
-            print(f"DEBUG: QtMultimedia audio output setup failed: {str(e)}")
+            _logger.error("QtMultimedia audio output setup failed: %s", str(e))
         
         # Connect to error signals for debugging
         self._player.errorOccurred.connect(self._on_error)
         self._player.mediaStatusChanged.connect(self._on_media_status_changed)
         
-        print("DEBUG: QtMultimediaBackend initialized")
+        _logger.debug("QtMultimediaBackend initialized")
 
     def _on_error(self, error):
-        print(f"DEBUG: QtMultimedia error: {error}")
+        _logger.error("QtMultimedia error: %s", error)
 
     def _on_media_status_changed(self, status):
-        print(f"DEBUG: QtMultimedia media status: {status}")
+        _logger.debug("QtMultimedia media status: %s", status)
 
     def _play(self):
         url = QUrl.fromLocalFile(self._path)
-        print(f"DEBUG: QtMultimedia playing file: {self._path}")
+        _logger.debug("QtMultimedia playing file: %s", self._path)
         # PySide6: Use setSource() directly instead of QMediaContent
         self._player.setSource(url)
-        print(f"DEBUG: QtMultimedia setSource() called with: {url.toString()}")
+        _logger.debug("QtMultimedia setSource() called with: %s", url.toString())
         self._player.play()
-        print("DEBUG: QtMultimedia play() called")
+        _logger.debug("QtMultimedia play() called")
 
     def play(self, data):
-        print(f"DEBUG: QtMultimediaBackend.play() called with {len(data)} bytes")
+        _logger.debug("QtMultimediaBackend.play() called with %d bytes", len(data))
         self._player.stop()
         with NamedTemporaryFile(mode='w+b', prefix='',
                 suffix='.tmp.mp3', dir=self._tmpdir, delete=False) as f:
             f.write(data)
             self._path = f.name
-        print(f"DEBUG: QtMultimedia temp file created: {self._path}")
+        _logger.debug("QtMultimedia temp file created: %s", self._path)
         QTimer.singleShot(0, self._play)
 
     def close(self):
-        print("DEBUG: QtMultimediaBackend.close() called")
+        _logger.debug("QtMultimediaBackend.close() called")
         self._player.stop()
         # Properly clean up the audio output
         if hasattr(self, '_audio_output'):
@@ -319,7 +319,7 @@ class QtMultimediaBackend(Backend):
             import shutil
             try:
                 shutil.rmtree(self._tmpdir)
-                print("DEBUG: QtMultimedia temp directory cleaned up")
+                _logger.debug("QtMultimedia temp directory cleaned up")
             except:
                 pass
 
@@ -327,38 +327,36 @@ class QtMultimediaBackend(Backend):
 class AppKitBackend(Backend):
     def __init__(self, parent, temp_dir):
         self._sound = None
-        print("DEBUG: AppKitBackend initialized")
+        _logger.debug("AppKitBackend initialized")
 
     def stop(self):
         if self._sound:
             self._sound.stop()
 
     def play(self, data):
-        print(f"DEBUG: AppKitBackend.play() called with {len(data)} bytes")
+        _logger.debug("AppKitBackend.play() called with %d bytes", len(data))
         if self._sound:
             self._sound.stop()
 
         try:
             self._sound = AppKit.NSSound.alloc().initWithData_(data)
             if self._sound:
-                print("DEBUG: AppKit NSSound created successfully")
+                _logger.debug("AppKit NSSound created successfully")
                 result = self._sound.play()
-                print(f"DEBUG: AppKit play() result: {result}")
+                _logger.debug("AppKit play() result: %s", result)
             else:
-                print("DEBUG: AppKit NSSound creation failed")
+                _logger.warning("AppKit NSSound creation failed")
         except Exception as e:
-            print(f"DEBUG: AppKit backend error: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            _logger.exception("AppKit backend error: %s", str(e))
 
     def close(self):
-        print("DEBUG: AppKitBackend.close() called")
+        _logger.debug("AppKitBackend.close() called")
         # Properly stop and release the NSSound object
         if self._sound:
             self._sound.stop()
             # Release the NSSound object to prevent hanging
             self._sound = None
-        print("DEBUG: AppKit NSSound properly released")
+        _logger.debug("AppKit NSSound properly released")
 
 
 def create_soundplayer(parent, temp_dir):
@@ -369,36 +367,36 @@ def create_soundplayer(parent, temp_dir):
     if platform.system() == "Darwin":
         if AppKit:
             backends.append(AppKitBackend)
-            print("DEBUG: AppKit backend available (prioritized on macOS)")
+            _logger.debug("AppKit backend available (prioritized on macOS)")
         if QtMultimedia:
             backends.append(QtMultimediaBackend)
-            print("DEBUG: QtMultimedia backend available")
+            _logger.debug("QtMultimedia backend available")
     else:
         # On other platforms, prioritize QtMultimedia
         if QtMultimedia:
             backends.append(QtMultimediaBackend)
-            print("DEBUG: QtMultimedia backend available")
+            _logger.debug("QtMultimedia backend available")
         if AppKit:
             backends.append(AppKitBackend)
-            print("DEBUG: AppKit backend available")
+            _logger.debug("AppKit backend available")
     
     # Add other backends in order of preference
     if mp3play:
         backends.append(WinMCIBackend)
-        print("DEBUG: WinMCI backend available")
+        _logger.debug("WinMCI backend available")
     if Phonon:
         backends.append(PhononBackend)
-        print("DEBUG: Phonon backend available")
+        _logger.debug("Phonon backend available")
     if Gst:
         backends.append(GstreamerBackend)
-        print("DEBUG: Gstreamer backend available")
+        _logger.debug("Gstreamer backend available")
     if gst:
         backends.append(GstreamerOldBackend)
-        print("DEBUG: GstreamerOld backend available")
+        _logger.debug("GstreamerOld backend available")
     backends.append(NullBackend)
 
     selected_backend = backends[0]
-    print(f"DEBUG: Selected audio backend: {selected_backend.__name__}")
+    _logger.info("Selected audio backend: %s", selected_backend.__name__)
     return selected_backend(parent, temp_dir)
 
 

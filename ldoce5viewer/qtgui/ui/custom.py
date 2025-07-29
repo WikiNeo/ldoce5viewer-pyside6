@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import sys
+import logging
 import os.path
 from PySide6.QtCore import (Qt, QUrl, QTimer, Signal, QMimeData, QSize, QRect,
                                QEvent, QPointF, QByteArray, QIODevice, QBuffer)
@@ -16,6 +17,8 @@ from PySide6.QtWidgets import (QListWidget, QListWidgetItem, QApplication, QMenu
                                  QStylePainter)
 from ...utils.text import ellipsis
 
+# Logger
+logger = logging.getLogger(__name__)
 
 DisplayRole = Qt.DisplayRole
 State_Selected = QStyle.State_Selected
@@ -256,17 +259,17 @@ class CustomWebEnginePage(QWebEnginePage):
         """Intercept navigation requests to handle audio URLs"""
         scheme = url.scheme()
         
-        print(f"DEBUG: Navigation request intercepted - URL: {url.toString()}, scheme: {scheme}, isMainFrame: {isMainFrame}")
+        logger.debug("Navigation request intercepted - URL: %s, scheme: %s, isMainFrame: %s", url.toString(), scheme, isMainFrame)
         
         # Handle audio URLs by calling the main window's playback method
         if scheme == 'audio':
-            print(f"DEBUG: Intercepting audio URL: {url.toString()}")
+            logger.debug("Intercepting audio URL: %s", url.toString())
             if self._main_window:
-                print(f"DEBUG: Calling main window _playbackAudio with path: {url.path()}")
+                logger.debug("Calling main window _playbackAudio with path: %s", url.path())
                 # Call the main window's _playbackAudio method
                 self._main_window._playbackAudio(url.path())
             else:
-                print(f"DEBUG: No main window reference available for audio playback")
+                logger.warning("No main window reference available for audio playback")
             return False  # Don't navigate to the audio URL
         
         # Handle other custom schemes normally

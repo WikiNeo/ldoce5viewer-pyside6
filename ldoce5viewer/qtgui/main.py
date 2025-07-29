@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 import sys
+import logging
 from operator import itemgetter
 from functools import partial
 from difflib import SequenceMatcher
@@ -56,6 +57,9 @@ sql_create_words_table = """
         created_at TEXT NOT NULL
     );
 """
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # Config
 _INDEX_SUPPORTED = "2013.02.25"
@@ -184,7 +188,7 @@ class MainWindow(QMainWindow):
 
     def _onAboutToQuit(self):
         """Handle application quit - ensure all resources are properly cleaned up"""
-        print("DEBUG: Application about to quit - cleaning up resources")
+        logger.debug("Application about to quit - cleaning up resources")
         
         # Force cleanup of all lazy-loaded objects
         self._cleanup_all_resources()
@@ -193,7 +197,7 @@ class MainWindow(QMainWindow):
         if _LAZY_SOUNDPLAYER in self._lazy:
             try:
                 self._lazy[_LAZY_SOUNDPLAYER].close()
-                print("DEBUG: Sound player closed during app quit")
+                logger.debug("Sound player closed during app quit")
             except:
                 pass
         
@@ -201,11 +205,11 @@ class MainWindow(QMainWindow):
         if _LAZY_FTS_HWDPHR_ASYNC in self._lazy:
             try:
                 self._lazy[_LAZY_FTS_HWDPHR_ASYNC].shutdown()
-                print("DEBUG: Async searcher shut down during app quit")
+                logger.debug("Async searcher shut down during app quit")
             except:
                 pass
         
-        print("DEBUG: Resource cleanup completed")
+        logger.debug("Resource cleanup completed")
 
     def _cleanup_all_resources(self):
         """Comprehensive cleanup of all resources"""
@@ -609,7 +613,7 @@ class MainWindow(QMainWindow):
         (archive, name) = path.lstrip('/').split('/', 1)
         if archive in ('us_hwd_pron', 'gb_hwd_pron', 'exa_pron', 'sfx', 'sound'):
             try:
-                print(f"DEBUG: _getAudioData - Loading audio file: {path}")
+                logger.debug("Loading audio file: %s", path)
                 
                 # Import here to avoid circular imports
                 from .config import get_config
@@ -622,21 +626,20 @@ class MainWindow(QMainWindow):
                 data, mime_type = ldoce5.get_content(path)
                 
                 if data:
-                    print(f"DEBUG: _getAudioData - Audio file loaded, size: {len(data)}")
+                    logger.debug("Audio file loaded, size: %d bytes", len(data))
                     callback(data)
                 else:
-                    print(f"DEBUG: _getAudioData - No audio data found for: {path}")
+                    logger.warning("No audio data found for: %s", path)
                     
             except NotFoundError as e:
-                print(f"DEBUG: _getAudioData - Audio file not found: {str(e)}")
+                logger.error("Audio file not found: %s", str(e))
             except FilemapError as e:
-                print(f"DEBUG: _getAudioData - Audio filemap error: {str(e)}")
+                logger.error("Audio filemap error: %s", str(e))
             except ArchiveError as e:
-                print(f"DEBUG: _getAudioData - Audio archive error: {str(e)}")
+                logger.error("Audio archive error: %s", str(e))
             except Exception as e:
-                print(f"DEBUG: _getAudioData - Audio general error: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                logger.error("Audio general error: %s", str(e))
+                logger.exception("Traceback for audio error")
 
     def downloadSelectedAudio(self):
         path = self._ui.webView.audioUrlToDownload.path()

@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import sys
+import logging
 import importlib.util
 import os.path
 import traceback
@@ -26,6 +27,9 @@ from ..utils.text import enc_utf8
 from .advanced import search_and_render
 from .utils import fontfallback
 from .config import get_config
+
+# Logger
+logger = logging.getLogger(__name__)
 
 STATIC_REL_PATH = 'static'
 
@@ -231,7 +235,7 @@ class WebEngineUrlSchemeHandler(QWebEngineUrlSchemeHandler):
         url = job.requestUrl()
         scheme = url.scheme()
         
-        print(f"DEBUG: URL scheme handler called - URL: {url.toString()}, scheme: {scheme}")
+        logger.debug("URL scheme handler called - URL: %s, scheme: %s", url.toString(), scheme)
         
         try:
             if scheme == 'static':
@@ -243,16 +247,14 @@ class WebEngineUrlSchemeHandler(QWebEngineUrlSchemeHandler):
             else:
                 self._handle_error(job, f"Unknown scheme: {scheme}")
         except Exception as e:
-            print(f"DEBUG: Exception in URL scheme handler: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("Exception in URL scheme handler: %s", str(e))
             self._handle_error(job, f"Error handling request: {str(e)}")
     
     def _handle_static_request(self, job, url):
         """Handle static:// requests"""
         try:
             path = url.path().lstrip('/')
-            print(f"DEBUG: Loading static file: {path}")
+            logger.debug("Loading static file: %s", path)
             data = _load_static_data(path)
             
             # Determine MIME type
@@ -268,17 +270,17 @@ class WebEngineUrlSchemeHandler(QWebEngineUrlSchemeHandler):
             elif path.endswith('.gif'):
                 mime_type = 'image/gif'
             
-            print(f"DEBUG: Static file loaded, size: {len(data)}, mime: {mime_type}")
+            logger.debug("Static file loaded, size: %d bytes, mime: %s", len(data), mime_type)
             self._send_response(job, data, mime_type)
         except Exception as e:
-            print(f"DEBUG: Static file error: {str(e)}")
+            logger.error("Static file error: %s", str(e))
             self._handle_error(job, f"Static file not found: {str(e)}")
     
     def _handle_dict_request(self, job, url):
         """Handle dict:// requests"""
         try:
             path = url.path().split('#', 1)[0]
-            print(f"DEBUG: Loading dict content for path: {path}")
+            logger.debug("Loading dict content for path: %s", path)
             config = get_config()
             ldoce5 = LDOCE5(config.get('dataDir', ''), config.filemap_path)
             data, mime_type = ldoce5.get_content(path)
@@ -286,21 +288,19 @@ class WebEngineUrlSchemeHandler(QWebEngineUrlSchemeHandler):
             if not mime_type:
                 mime_type = 'text/html'
             
-            print(f"DEBUG: Dict content loaded, size: {len(data) if data else 0}, mime: {mime_type}")
+            logger.debug("Dict content loaded, size: %d bytes, mime: %s", len(data) if data else 0, mime_type)
             self._send_response(job, data, mime_type)
         except NotFoundError as e:
-            print(f"DEBUG: Dict content not found: {str(e)}")
+            logger.warning("Dict content not found: %s", str(e))
             self._handle_error(job, "Content Not Found")
         except FilemapError as e:
-            print(f"DEBUG: Dict filemap error: {str(e)}")
+            logger.error("Dict filemap error: %s", str(e))
             self._handle_error(job, "File-Location Map Not Available")
         except ArchiveError as e:
-            print(f"DEBUG: Dict archive error: {str(e)}")
+            logger.error("Dict archive error: %s", str(e))
             self._handle_error(job, "Dictionary Data Not Available")
         except Exception as e:
-            print(f"DEBUG: Dict general error: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("Dict general error: %s", str(e))
             self._handle_error(job, f"Dictionary error: {str(e)}")
     
     def _handle_search_request(self, job, url):
@@ -341,18 +341,16 @@ class WebEngineUrlSchemeHandler(QWebEngineUrlSchemeHandler):
             if hasattr(job, 'destroyed'):
                 job.destroyed.connect(cleanup_buffer)
             
-            print(f"DEBUG: Sending response, data size: {len(data)}, mime: {mime_type}")
+            logger.debug("Sending response, data size: %d bytes, mime: %s", len(data), mime_type)
             job.reply(mime_type.encode('utf-8'), buffer)
             
         except Exception as e:
-            print(f"DEBUG: Error sending response: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("Error sending response: %s", str(e))
             self._handle_error(job, f"Response error: {str(e)}")
     
     def _handle_error(self, job, error_message):
         """Send error response"""
-        print(f"DEBUG: Sending error response: {error_message}")
+        logger.warning("Sending error response: %s", error_message)
         error_html = f"<html><body><h2>Error</h2><p>{error_message}</p></body></html>"
         self._send_response(job, error_html, 'text/html')
 
