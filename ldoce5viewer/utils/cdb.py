@@ -2,47 +2,50 @@
 
 from struct import Struct
 
-"""Memory-mapped file objects behave like both bytearray and like file objects. You can use mmap objects in most places 
-where bytearray are expected; for example, you can use the re module to search through a memory-mapped file. You can 
-also change a single byte by doing obj[index] = 97, or change a subsequence by assigning to a 
-slice: obj[i1:i2] = b'...'. You can also read and write data starting at the current file position, and seek() through 
+"""Memory-mapped file objects behave like both bytearray and like file objects. You can use mmap objects in most places
+where bytearray are expected; for example, you can use the re module to search through a memory-mapped file. You can
+also change a single byte by doing obj[index] = 97, or change a subsequence by assigning to a
+slice: obj[i1:i2] = b'...'. You can also read and write data starting at the current file position, and seek() through
 the file to different positions.
 """
-from mmap import mmap, ACCESS_READ
+from mmap import ACCESS_READ, mmap
 
 """
 < little-endian
 L unsigned long -> 4 bytes
 
 class struct.Struct(format)
-    Return a new Struct object which writes and reads binary data according to the format string format. Creating a 
-    Struct object once and calling its methods is more efficient than calling module-level functions with the same 
+    Return a new Struct object which writes and reads binary data according to the format string format. Creating a
+    Struct object once and calling its methods is more efficient than calling module-level functions with the same
     format since the format string is only compiled once.
 """
-_struct_2L = Struct(b'<LL')
+_struct_2L = Struct(b"<LL")
 """
 unpack(buffer)
-    Unpack from the buffer buffer (presumably packed by pack(format, ...)) according to the format string format. The 
-    result is a tuple even if it contains exactly one item. The buffer’s size in bytes must match the size required by the 
+    Unpack from the buffer buffer (presumably packed by pack(format, ...)) according to the format string format. The
+    result is a tuple even if it contains exactly one item. The buffer’s size in bytes must match the size required by the
     format, as reflected by calcsize().
 """
 _read_2L = _struct_2L.unpack
 """
 pack(v1, v2, ...)
-    Pack the values v1, v2, … according to the format string format and write the packed bytes into the writable 
+    Pack the values v1, v2, … according to the format string format and write the packed bytes into the writable
     buffer buffer starting at position offset. Note that offset is a required argument.
 """
 _write_2L = _struct_2L.pack
-_read_512L = Struct(b'<512L').unpack
+_read_512L = Struct(b"<512L").unpack
 
 try:
     import __builtin__
+
     range = __builtin__.xrange
 except ImportError:
     pass
 
 import itertools
-zip = getattr(itertools, 'izip', zip)
+
+zip = getattr(itertools, "izip", zip)
+
 
 def hashfunc(s):
     """
@@ -54,7 +57,7 @@ def hashfunc(s):
     """
     h = 5381
     for c in bytearray(s):
-        h = h * 33 & 0xffffffff ^ c
+        h = h * 33 & 0xFFFFFFFF ^ c
     return h
 
 
@@ -62,15 +65,15 @@ class CDBError(Exception):
     pass
 
 
-class CDBReader(object):
-    __slots__ = ('_mmap', '_maintable')
+class CDBReader:
+    __slots__ = ("_mmap", "_maintable")
 
     def __init__(self, path):
         self._mmap = None
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             mm = self._mmap = mmap(f.fileno(), 0, access=ACCESS_READ)
         if len(mm) < 2048:
-            raise CDBError('file too small')
+            raise CDBError("file too small")
         mt = _read_512L(mm.read(2048))
         self._maintable = tuple(zip(mt[0::2], mt[1::2]))
 
@@ -111,7 +114,7 @@ class CDBReader(object):
         """
         (pos_hash_table, num_of_slots) = self._maintable[table_index]
         if pos_hash_table <= 2048:
-            raise CDBError('broken file')
+            raise CDBError("broken file")
 
         def iter_subtable():
             # The hash value divided by 256, modulo the length of that table, is a slot number.
@@ -124,12 +127,12 @@ class CDBReader(object):
             pa = pos_hash_table + 8 * init_slot
             pb = pos_hash_table + 8 * num_of_slots
             for p in range(pa, pb, 8):
-                yield _read_2L(mm[p:p+8])
+                yield _read_2L(mm[p : p + 8])
             for p in range(pos_hash_table, pa, 8):
-                yield _read_2L(mm[p:p+8])
+                yield _read_2L(mm[p : p + 8])
 
         if num_of_slots:
-            for (hash_value, byte_position) in iter_subtable():
+            for hash_value, byte_position in iter_subtable():
                 if byte_position == 0:
                     # not exist
                     break
@@ -138,7 +141,7 @@ class CDBReader(object):
                     (klen, vlen) = _read_2L(mm[byte_position:pk])
                     pv = pk + klen
                     if key == mm[pk:pv]:
-                        return mm[pv:(pv+vlen)]
+                        return mm[pv : (pv + vlen)]
         return default
 
     def __getitem__(self, key):
@@ -148,7 +151,7 @@ class CDBReader(object):
         return r
 
     def __contains__(self, key):
-        return (self.get(key) is not None)
+        return self.get(key) is not None
 
     def iteritems(self):
         mm = self._mmap
@@ -160,7 +163,7 @@ class CDBReader(object):
             yield (read(klen), read(vlen))
 
 
-class CDBMaker(object):
+class CDBMaker:
     def __init__(self, f):
         self._f = f
         self._f.seek(2048)
@@ -192,14 +195,14 @@ class CDBMaker(object):
             hashed_high, subidx = divmod(hashed, 256)
             ini = hashed_high % sub_num[subidx]
             for pos in range(ini * 8, sub_num[subidx] * 8, 8):
-                h, p = _read_2L(bytes(buf[pos: pos+8]))
+                h, p = _read_2L(bytes(buf[pos : pos + 8]))
                 if p == 0:
-                    buf[pos:pos+8] = _write_2L(hashed, pointer)
+                    buf[pos : pos + 8] = _write_2L(hashed, pointer)
                     return
             for pos in range(0, ini * 8, 8):
-                h, p = _read_2L(bytes(buf[pos: pos+8]))
+                h, p = _read_2L(bytes(buf[pos : pos + 8]))
                 if p == 0:
-                    buf[pos:pos+8] = _write_2L(hashed, pointer)
+                    buf[pos : pos + 8] = _write_2L(hashed, pointer)
                     return
 
         sub_pos = []

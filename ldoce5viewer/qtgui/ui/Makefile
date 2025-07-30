@@ -17,4 +17,3 @@ __init__.py:
 .PYONY: clean
 clean:
 	rm -f $(PYFILES)
-

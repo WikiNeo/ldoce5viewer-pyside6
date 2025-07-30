@@ -150,7 +150,7 @@ ul.r_examples a:hover, ul.r_definitions a:hover {
     font-weight: bold;
 }
 .label_c .label_n, .label_c .label_f, .label_c .label_p,
-.label_l .label_n, .label_l .label_f, .label_l .label_p 
+.label_l .label_n, .label_l .label_f, .label_l .label_p
 {
     color: #777;
 }
@@ -172,4 +172,3 @@ ul.nav {
     display: none;
 }
 } /* END of @media print */
-

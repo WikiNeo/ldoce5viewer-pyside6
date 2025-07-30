@@ -28,4 +28,3 @@ edit-clear-48.png: edit-clear-48-src.png
 .PHONY: clean
 clean:
 	rm -f *.png
-

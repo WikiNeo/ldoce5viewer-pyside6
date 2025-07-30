@@ -1,13 +1,12 @@
-'''This module prevent you from running two instances of the app'''
+"""This module prevent you from running two instances of the app"""
 
-
-from PySide6.QtCore import Signal, QIODevice
+from PySide6.QtCore import QIODevice, Signal
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
-from PySide6.QtNetwork import QLocalSocket, QLocalServer
 
 
 class SingleApplication(QApplication):
-    messageAvailable = Signal(type(u''))
+    messageAvailable = Signal(str)
 
     def __init__(self, argv, key):
         QApplication.__init__(self, argv)
@@ -38,7 +37,7 @@ class SingleApplication(QApplication):
     def __onNewConnection(self):
         socket = self._server.nextPendingConnection()
         if socket.waitForReadyRead(self._timeout):
-            self.messageAvailable.emit(socket.readAll().data().decode('utf-8'))
+            self.messageAvailable.emit(socket.readAll().data().decode("utf-8"))
             socket.disconnectFromServer()
         else:
             pass
@@ -47,14 +46,14 @@ class SingleApplication(QApplication):
         return self._isRunning
 
     def sendMessage(self, message):
-        assert(self._isRunning)
+        assert self._isRunning
 
         if self.isRunning():
             socket = QLocalSocket(self)
             socket.connectToServer(self._key, QIODevice.WriteOnly)
             if not socket.waitForConnected(self._timeout):
                 return False
-            socket.write(message.encode('utf-8'))
+            socket.write(message.encode("utf-8"))
             if not socket.waitForBytesWritten(self._timeout):
                 return False
             socket.disconnectFromServer()

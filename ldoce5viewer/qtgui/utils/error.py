@@ -1,9 +1,9 @@
 """Error console"""
 
-from logging import StreamHandler
 import threading
+from logging import StreamHandler
 
-from PySide6.QtCore import QMutex, QRecursiveMutex, QObject, Signal
+from PySide6.QtCore import QObject, QRecursiveMutex, Signal
 from PySide6.QtWidgets import QPlainTextEdit
 
 
@@ -24,7 +24,7 @@ class MyStreamHandler(StreamHandler):
 
 
 class StdErrWrapper(QObject):
-    _write = Signal(type(u''))
+    _write = Signal(str)
     _flush = Signal()
 
     def __init__(self, old_stderr):
@@ -34,17 +34,18 @@ class StdErrWrapper(QObject):
         self._mutex = QRecursiveMutex()
 
     def setApplication(self, app):
-        assert(self._widget is None)
+        assert self._widget is None
 
         widget = QPlainTextEdit()
-        widget.setWindowTitle(u"Error Console")
+        widget.setWindowTitle("Error Console")
         widget.resize(486, 300)
         widget.appendHtml(
-            u'<span style="color: green">'
-            u'An unhandled error occurred.<br>'
-            u'Sorry for the inconvinience.<br>'
-            u'Please copy the following text into a bug report:<br><br>'
-            u'</span>')
+            '<span style="color: green">'
+            "An unhandled error occurred.<br>"
+            "Sorry for the inconvinience.<br>"
+            "Please copy the following text into a bug report:<br><br>"
+            "</span>"
+        )
         app.aboutToQuit.connect(self.restoreStdErr)
         self._write.connect(self._write_handler)
         self._flush.connect(self._flush_handler)
@@ -72,13 +73,13 @@ class StdErrWrapper(QObject):
 
     @property
     def encoding(self):
-        return 'utf-8'
+        return "utf-8"
 
     def write(self, s):
         self._mutex.lock()
         if self._widget:
             if isinstance(s, bytes):
-                s = s.decode('utf-8', 'replace')
+                s = s.decode("utf-8", "replace")
             self._write.emit(s)
         else:
             self._old_stderr.write(s)

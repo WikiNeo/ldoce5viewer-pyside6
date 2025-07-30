@@ -71,7 +71,7 @@ find_uv() {
         command -v uv
         return 0
     fi
-    
+
     # Common locations where uv might be installed
     local uv_locations=(
         "\$HOME/.local/bin/uv"
@@ -79,14 +79,14 @@ find_uv() {
         "/usr/local/bin/uv"
         "/usr/bin/uv"
     )
-    
+
     for location in "\${uv_locations[@]}"; do
         if [ -x "\$location" ]; then
             echo "\$location"
             return 0
         fi
     done
-    
+
     return 1
 }
 
@@ -133,4 +133,4 @@ echo "  • The application automatically handles Wayland compatibility"
 echo "  • First run will ask you to set up your LDOCE5 dictionary data"
 echo "  • For audio support, you may need: sudo pacman -S gstreamer gst-plugins-base gst-plugins-good"
 echo ""
-echo "🎉 Installation complete!" 
+echo "🎉 Installation complete!"

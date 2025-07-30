@@ -2,8 +2,10 @@
 
 import sys
 
-import Image, ImageFilter, ImageChops, ImageEnhance, ImageDraw
-
+import Image
+import ImageChops
+import ImageEnhance
+import ImageFilter
 
 OFFSET_S = 4
 OFFSET_H = 4
@@ -84,7 +86,7 @@ def make(src_path, out_path):
 
     outa = ImageChops.subtract(outa, ImageChops.constant(outa, 25), 1, 0)
 
-    out = Image.merge('RGBA', (outr, outg, outb, outa))
+    out = Image.merge("RGBA", (outr, outg, outb, outa))
     out.save(out_path)
 
 
@@ -92,4 +94,3 @@ if __name__ == "__main__":
     src_path = sys.argv[1]
     out_path = sys.argv[2]
     make(src_path, out_path)
-

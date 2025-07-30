@@ -20,4 +20,3 @@ $(function(){
         opacity: 0.75,
     });
 })
-
