@@ -1,11 +1,12 @@
-import sys
-import os
 import abc
-from tempfile import NamedTemporaryFile, mkdtemp
 import logging
+import os
 import platform
+import sys
+from tempfile import NamedTemporaryFile, mkdtemp
 
 from PySide6.QtCore import *
+
 from ...utils.compat import range
 
 _logger = logging.getLogger(__name__)
@@ -13,8 +14,10 @@ _logger = logging.getLogger(__name__)
 # Gstreamer 1.0
 try:
     import gi
-    gi.require_version('Gst', '1.0')
+
+    gi.require_version("Gst", "1.0")
     from gi.repository import GObject, Gst
+
     GObject.threads_init()
     Gst.init(None)
 except (ImportError, ValueError):
@@ -25,8 +28,9 @@ except (ImportError, ValueError):
 try:
     if Gst is not None:
         raise ImportError()
-    import gst
     import gobject
+    import gst
+
     gobject.threads_init()
 except ImportError:
     gst = None
@@ -40,7 +44,7 @@ except:
 
 
 # WinMCI
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import mp3play
     except:
@@ -63,13 +67,16 @@ except ImportError:
     QtMultimedia = None
 
 
-class Backend(object):
+class Backend:
     __metaclass__ = abc.ABCMeta
+
     def __init__(self, parent, temp_dir):
         pass
+
     @abc.abstractmethod
     def play(self, data):
         pass
+
     @abc.abstractmethod
     def close(self):
         pass
@@ -78,8 +85,10 @@ class Backend(object):
 class NullBackend(Backend):
     def __init__(self, parent, temp_dir):
         pass
+
     def play(self, data):
         pass
+
     def close(self):
         pass
 
@@ -97,10 +106,10 @@ class GstreamerBackend(Backend):
 
         try:
             self._player = Gst.parse_launch(
-                    'appsrc name=src ! decodebin ! autoaudiosink')
+                "appsrc name=src ! decodebin ! autoaudiosink"
+            )
         except:
-            _logger.error(
-                "Gstreamer's good-plugins package is needed to play sound")
+            _logger.error("Gstreamer's good-plugins package is needed to play sound")
             return
 
         self._player.set_state(Gst.State.NULL)
@@ -110,13 +119,13 @@ class GstreamerBackend(Backend):
 
         def need_data(appsrc, size):
             if not self._data:
-                appsrc.emit('end-of-stream')
+                appsrc.emit("end-of-stream")
                 return
-            appsrc.emit('push-buffer', Gst.Buffer.new_wrapped(self._data[:size]))
+            appsrc.emit("push-buffer", Gst.Buffer.new_wrapped(self._data[:size]))
             self._data = self._data[size:]
 
         self._data = data
-        self._player.get_by_name('src').connect('need-data', need_data)
+        self._player.get_by_name("src").connect("need-data", need_data)
         self._player.set_state(Gst.State.PLAYING)
 
     def _on_message(self, bus, message):
@@ -143,10 +152,10 @@ class GstreamerOldBackend(Backend):
 
         try:
             self._player = gst.parse_launch(
-                    'appsrc name=src ! decodebin2 ! autoaudiosink')
+                "appsrc name=src ! decodebin2 ! autoaudiosink"
+            )
         except:
-            _logger.error(
-                "Gstreamer's good-plugins package is needed to play sound")
+            _logger.error("Gstreamer's good-plugins package is needed to play sound")
             return
 
         self._player.set_state(gst.STATE_NULL)
@@ -156,13 +165,13 @@ class GstreamerOldBackend(Backend):
 
         def need_data(appsrc, size):
             if not self._data:
-                appsrc.emit('end-of-stream')
+                appsrc.emit("end-of-stream")
                 return
-            appsrc.emit('push-buffer', gst.Buffer(self._data[:size]))
+            appsrc.emit("push-buffer", gst.Buffer(self._data[:size]))
             self._data = self._data[size:]
 
         self._data = data
-        self._player.get_by_name('src').connect('need-data', need_data)
+        self._player.get_by_name("src").connect("need-data", need_data)
         self._player.set_state(gst.STATE_PLAYING)
 
     def _on_message(self, bus, message):
@@ -184,15 +193,14 @@ class WinMCIBackend(Backend):
 
     def _get_f(self):
         for i in range(self._NUM_TRY):
-            path = os.path.join(self._temp_dir,
-                    "sound.tmp{0}.mp3".format(i))
+            path = os.path.join(self._temp_dir, f"sound.tmp{i}.mp3")
             try:
                 os.unlink(path)
             except:
                 pass
             try:
                 f = open(path, "wb")
-            except IOError:
+            except OSError:
                 continue
             else:
                 return f
@@ -214,8 +222,7 @@ class WinMCIBackend(Backend):
 
     def close(self):
         for i in range(self._NUM_TRY):
-            path = os.path.join(self._temp_dir,
-                    "sound.tmp{0}.mp3".format(i))
+            path = os.path.join(self._temp_dir, f"sound.tmp{i}.mp3")
             try:
                 os.unlink(path)
             except:
@@ -239,8 +246,9 @@ class PhononBackend(Backend):
     def play(self, data):
         self._player.stop()
         self._clean_tmp()
-        with NamedTemporaryFile(mode='w+b', prefix='',
-                suffix='.tmp.mp3', delete=False) as f:
+        with NamedTemporaryFile(
+            mode="w+b", prefix="", suffix=".tmp.mp3", delete=False
+        ) as f:
             f.write(data)
             self._path = f.name
             self._alive.add(f.name)
@@ -266,7 +274,7 @@ class QtMultimediaBackend(Backend):
     def __init__(self, parent, temp_dir):
         self._player = QtMultimedia.QMediaPlayer()
         self._tmpdir = mkdtemp()
-        
+
         # PySide6: Set up audio output
         try:
             self._audio_output = QtMultimedia.QAudioOutput()
@@ -276,11 +284,11 @@ class QtMultimediaBackend(Backend):
             _logger.debug("QtMultimedia audio output configured with volume 0.8")
         except Exception as e:
             _logger.error("QtMultimedia audio output setup failed: %s", str(e))
-        
+
         # Connect to error signals for debugging
         self._player.errorOccurred.connect(self._on_error)
         self._player.mediaStatusChanged.connect(self._on_media_status_changed)
-        
+
         _logger.debug("QtMultimediaBackend initialized")
 
     def _on_error(self, error):
@@ -301,8 +309,9 @@ class QtMultimediaBackend(Backend):
     def play(self, data):
         _logger.debug("QtMultimediaBackend.play() called with %d bytes", len(data))
         self._player.stop()
-        with NamedTemporaryFile(mode='w+b', prefix='',
-                suffix='.tmp.mp3', dir=self._tmpdir, delete=False) as f:
+        with NamedTemporaryFile(
+            mode="w+b", prefix="", suffix=".tmp.mp3", dir=self._tmpdir, delete=False
+        ) as f:
             f.write(data)
             self._path = f.name
         _logger.debug("QtMultimedia temp file created: %s", self._path)
@@ -312,11 +321,12 @@ class QtMultimediaBackend(Backend):
         _logger.debug("QtMultimediaBackend.close() called")
         self._player.stop()
         # Properly clean up the audio output
-        if hasattr(self, '_audio_output'):
+        if hasattr(self, "_audio_output"):
             self._audio_output = None
         # Clean up temporary directory
-        if hasattr(self, '_tmpdir'):
+        if hasattr(self, "_tmpdir"):
             import shutil
+
             try:
                 shutil.rmtree(self._tmpdir)
                 _logger.debug("QtMultimedia temp directory cleaned up")
@@ -361,7 +371,7 @@ class AppKitBackend(Backend):
 
 def create_soundplayer(parent, temp_dir):
     backends = []
-    
+
     # On macOS (Darwin), prioritize AppKit backend over QtMultimedia
     # for better reliability with Python 3.13
     if platform.system() == "Darwin":
@@ -379,7 +389,7 @@ def create_soundplayer(parent, temp_dir):
         if AppKit:
             backends.append(AppKitBackend)
             _logger.debug("AppKit backend available")
-    
+
     # Add other backends in order of preference
     if mp3play:
         backends.append(WinMCIBackend)
@@ -398,6 +408,3 @@ def create_soundplayer(parent, temp_dir):
     selected_backend = backends[0]
     _logger.info("Selected audio backend: %s", selected_backend.__name__)
     return selected_backend(parent, temp_dir)
-
-
-

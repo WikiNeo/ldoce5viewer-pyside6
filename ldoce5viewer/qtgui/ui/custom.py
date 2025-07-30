@@ -1,21 +1,22 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
-import sys
 import logging
-import os.path
-from PySide6.QtCore import (Qt, QUrl, QTimer, Signal, QMimeData, QSize, QRect,
-                               QEvent, QPointF, QByteArray, QIODevice, QBuffer)
-from PySide6.QtGui import (QFont, QPixmap, QBrush, QColor, QPainter, QIcon,
-                             QKeySequence, QDesktopServices, QAction, QTextDocument)
-from PySide6.QtWebEngineWidgets import QWebEngineView
+import sys
+
+from PySide6.QtCore import QSize, Qt, QUrl, Signal
+from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPainter, QTextDocument
 from PySide6.QtWebEngineCore import QWebEnginePage
-from PySide6.QtWidgets import (QListWidget, QListWidgetItem, QApplication, QMenu,
-                                 QTextEdit, QFrame, QVBoxLayout, QScrollArea,
-                                 QLabel, QWidget, QHBoxLayout, QSplitter, QStyle, QToolButton,
-                                 QLineEdit, QStyledItemDelegate, QSizeGrip, QStyleOptionToolButton,
-                                 QStylePainter)
-from ...utils.text import ellipsis
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import (
+    QApplication,
+    QLineEdit,
+    QListWidget,
+    QMenu,
+    QSizeGrip,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionToolButton,
+    QStylePainter,
+    QToolButton,
+)
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -43,7 +44,8 @@ class ToolButton(QToolButton):
         opt.features &= ~QStyleOptionToolButton.HasMenu
         content_size = opt.iconSize
         return self.style().sizeFromContents(
-                QStyle.CT_ToolButton, opt, content_size, self)
+            QStyle.CT_ToolButton, opt, content_size, self
+        )
 
 
 class LineEdit(QLineEdit):
@@ -58,24 +60,26 @@ class LineEdit(QLineEdit):
         ICONSIZE = self._ICONSIZE
 
         self._buttonFind = QToolButton(self)
-        self._buttonFind.setCursor(Qt.ArrowCursor);
+        self._buttonFind.setCursor(Qt.ArrowCursor)
         self._buttonFind.setIconSize(QSize(ICONSIZE, ICONSIZE))
-        self._buttonFind.setIcon(QIcon(':/icons/edit-find.png'))
+        self._buttonFind.setIcon(QIcon(":/icons/edit-find.png"))
         self._buttonFind.setStyleSheet(
-                "QToolButton { border: none; margin: 0; padding: 0; }")
+            "QToolButton { border: none; margin: 0; padding: 0; }"
+        )
         self._buttonFind.setFocusPolicy(Qt.NoFocus)
         self._buttonFind.clicked.connect(self.selectAll)
 
         self._buttonClear = QToolButton(self)
-        self._buttonClear.hide();
+        self._buttonClear.hide()
         self._buttonClear.setToolTip("Clear")
-        self._buttonClear.setCursor(Qt.ArrowCursor);
+        self._buttonClear.setCursor(Qt.ArrowCursor)
         self._buttonClear.setIconSize(QSize(ICONSIZE, ICONSIZE))
-        self._buttonClear.setIcon(QIcon(':/icons/edit-clear.png'))
+        self._buttonClear.setIcon(QIcon(":/icons/edit-clear.png"))
         self._buttonClear.setStyleSheet(
-                "QToolButton { border: none; margin: 0; padding: 0; }")
+            "QToolButton { border: none; margin: 0; padding: 0; }"
+        )
         self._buttonClear.setFocusPolicy(Qt.NoFocus)
-        self._buttonClear.clicked.connect(self.clear);
+        self._buttonClear.clicked.connect(self.clear)
 
         minsize = self.minimumSizeHint()
         framewidth = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
@@ -87,7 +91,8 @@ class LineEdit(QLineEdit):
         height = max(minsize.height(), ICONSIZE + (framewidth + 2) * 2)
         self.setMinimumSize(
             max(minsize.width(), (ICONSIZE + framewidth + 2 + 2) * 2),
-            int(height / 2.0 + 0.5) * 2)
+            int(height / 2.0 + 0.5) * 2,
+        )
 
         self.textChanged.connect(self.__onTextChanged)
 
@@ -95,12 +100,11 @@ class LineEdit(QLineEdit):
         ICONSIZE = self._ICONSIZE
         framewidth = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
         rect = self.rect()
-        self._buttonFind.move(
-                framewidth + 3 - 1,
-                (rect.height() - ICONSIZE) // 2 - 1)
+        self._buttonFind.move(framewidth + 3 - 1, (rect.height() - ICONSIZE) // 2 - 1)
         self._buttonClear.move(
-                rect.width() - framewidth - 3 - ICONSIZE - 1,
-                (rect.height() - ICONSIZE) // 2 - 1)
+            rect.width() - framewidth - 3 - ICONSIZE - 1,
+            (rect.height() - ICONSIZE) // 2 - 1,
+        )
 
     def __onTextChanged(self, text):
         self._buttonClear.setVisible(bool(text))
@@ -108,8 +112,7 @@ class LineEdit(QLineEdit):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.escapePressed.emit()
-        elif event.key() == Qt.Key_Return and \
-                event.modifiers() & Qt.ShiftModifier:
+        elif event.key() == Qt.Key_Return and event.modifiers() & Qt.ShiftModifier:
             self.shiftReturnPressed.emit()
         else:
             super(LineEdit, self).keyPressEvent(event)
@@ -125,8 +128,7 @@ class LineEditFind(QLineEdit):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.escapePressed.emit()
-        elif event.key() == Qt.Key_Return and \
-                event.modifiers() == Qt.ShiftModifier:
+        elif event.key() == Qt.Key_Return and event.modifiers() == Qt.ShiftModifier:
             self.shiftReturnPressed.emit()
         elif event.key() == Qt.Key_Return:
             self.returnPressed.emit()
@@ -135,9 +137,7 @@ class LineEditFind(QLineEdit):
 
 
 class HtmlListWidget(QListWidget):
-
     class HtmlItemDelegate(QStyledItemDelegate):
-
         MARGIN_H = 5
         if sys.platform.startswith("win"):
             MARGIN_V = 3
@@ -180,8 +180,7 @@ class HtmlListWidget(QListWidget):
 
     def __init__(self, parent):
         super(HtmlListWidget, self).__init__(parent)
-        QListWidget.setStyleSheet(self,
-                "QListWidget{background-color: white;}")
+        QListWidget.setStyleSheet(self, "QListWidget{background-color: white;}")
         self._item_delegate = HtmlListWidget.HtmlItemDelegate(parent)
         self.setItemDelegate(self._item_delegate)
 
@@ -246,34 +245,43 @@ class ListWidget(QListWidget):
 
 class CustomWebEnginePage(QWebEnginePage):
     """Custom WebEngine page that intercepts audio navigation requests"""
-    
+
     def __init__(self, parent=None):
         super(CustomWebEnginePage, self).__init__(parent)
         self._main_window = None
-    
+
     def set_main_window(self, main_window):
         """Set reference to main window for audio playback"""
         self._main_window = main_window
-    
+
     def acceptNavigationRequest(self, url, nav_type, isMainFrame):
         """Intercept navigation requests to handle audio URLs"""
         scheme = url.scheme()
-        
-        logger.debug("Navigation request intercepted - URL: %s, scheme: %s, isMainFrame: %s", url.toString(), scheme, isMainFrame)
-        
+
+        logger.debug(
+            "Navigation request intercepted - URL: %s, scheme: %s, isMainFrame: %s",
+            url.toString(),
+            scheme,
+            isMainFrame,
+        )
+
         # Handle audio URLs by calling the main window's playback method
-        if scheme == 'audio':
+        if scheme == "audio":
             logger.debug("Intercepting audio URL: %s", url.toString())
             if self._main_window:
-                logger.debug("Calling main window _playbackAudio with path: %s", url.path())
+                logger.debug(
+                    "Calling main window _playbackAudio with path: %s", url.path()
+                )
                 # Call the main window's _playbackAudio method
                 self._main_window._playbackAudio(url.path())
             else:
                 logger.warning("No main window reference available for audio playback")
             return False  # Don't navigate to the audio URL
-        
+
         # Handle other custom schemes normally
-        return super(CustomWebEnginePage, self).acceptNavigationRequest(url, nav_type, isMainFrame)
+        return super(CustomWebEnginePage, self).acceptNavigationRequest(
+            url, nav_type, isMainFrame
+        )
 
 
 class WebView(QWebEngineView):
@@ -281,11 +289,11 @@ class WebView(QWebEngineView):
 
     def __init__(self, parent):
         super(WebView, self).__init__(parent)
-        
+
         # Use custom page to intercept audio navigation
         custom_page = CustomWebEnginePage(self)
         self.setPage(custom_page)
-        
+
         # Initialize main window reference
         self._main_window = None
 
@@ -294,20 +302,20 @@ class WebView(QWebEngineView):
         self._actionSearchText = QAction(self)
         if sys.platform != "darwin":
             self._actionSearchText.setIcon(
-                    QIcon.fromTheme('edit-find',
-                        QIcon(':/icons/edit-find.png')))
+                QIcon.fromTheme("edit-find", QIcon(":/icons/edit-find.png"))
+            )
         self._actionCopyPlain = QAction(self)
-        self._actionCopyPlain.setText('Copy')
+        self._actionCopyPlain.setText("Copy")
         if sys.platform != "darwin":
             self._actionCopyPlain.setIcon(
-                    QIcon.fromTheme('edit-copy',
-                        QIcon(':/icons/edit-copy.png')))
+                QIcon.fromTheme("edit-copy", QIcon(":/icons/edit-copy.png"))
+            )
         self._actionCopyPlain.triggered.connect(self._copyAsPlainText)
         self._actionCopyPlain.setShortcut(QKeySequence.Copy)
         self.page().selectionChanged.connect(self.__onSelectionChanged)
         self.__onSelectionChanged()
-        self._actionDownloadAudio = QAction(u'Download mp3',  self)
-    
+        self._actionDownloadAudio = QAction("Download mp3", self)
+
     def set_main_window(self, main_window):
         """Set reference to main window for audio playback"""
         self._main_window = main_window
@@ -319,6 +327,7 @@ class WebView(QWebEngineView):
         # WebEngine doesn't have selectedText() directly, use page().selectedText()
         def handle_text(text):
             QApplication.clipboard().setText(text.strip())
+
         self.page().runJavaScript("window.getSelection().toString()", handle_text)
 
     def selectedText(self):
@@ -341,7 +350,7 @@ class WebView(QWebEngineView):
 
     @property
     def audioUrlToDownload(self):
-        return getattr(self, '_audioUrlToDownload', QUrl())
+        return getattr(self, "_audioUrlToDownload", QUrl())
 
     def __onSelectionChanged(self):
         # WebEngine doesn't provide easy access to selection state
@@ -352,21 +361,21 @@ class WebView(QWebEngineView):
         # WebEngine handles context menus differently
         # We'll create a basic context menu
         menu = QMenu(self)
-        
+
         # Add copy action
         menu.addAction(self.actionCopyPlain)
-        
+
         # Add search action if there's selected text
         # Note: We can't easily check for selected text in WebEngine
         # so we'll always show the search option
         menu.addAction(self.actionSearchText)
-        
+
         # Add separator
         menu.addSeparator()
-        
+
         # Add download audio action (simplified)
         menu.addAction(self.actionDownloadAudio)
-        
+
         # Display the context menu
         menu.exec_(event.globalPos())
 
@@ -376,33 +385,33 @@ class WebView(QWebEngineView):
         else:
             super(WebView, self).keyPressEvent(event)
 
-    #--------------
+    # --------------
     # Mouse Events
-    #--------------
+    # --------------
 
     def mousePressEvent(self, event):
-        if sys.platform not in ('win32', 'darwin'):
+        if sys.platform not in ("win32", "darwin"):
             if self.handleNavMouseButtons(event):
                 return
         super(WebView, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if sys.platform in ('win32', 'darwin'):
+        if sys.platform in ("win32", "darwin"):
             if self.handleNavMouseButtons(event):
                 return
         super(WebView, self).mouseReleaseEvent(event)
 
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier:
-             self.wheelWithCtrl.emit(event.pixelDelta())
-             return
+            self.wheelWithCtrl.emit(event.pixelDelta())
+            return
         super(WebView, self).wheelEvent(event)
 
     def handleNavMouseButtons(self, event):
         if event.button() == Qt.XButton1:
             self.back()
             return True
-        elif event.button() == Qt.XButton2:
+        if event.button() == Qt.XButton2:
             self.forward()
             return True
         return False
@@ -428,4 +437,3 @@ class WebView(QWebEngineView):
                 self.page().triggerAction(action)
             except:
                 pass  # Ignore if action doesn't exist
-

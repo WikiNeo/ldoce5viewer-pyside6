@@ -38,3 +38,128 @@ include = ["ldoce5viewer*"]
 
 [tool.setuptools.package-data]
 ldoce5viewer = ["static/**/*", "qtgui/resources/**/*", "qtgui/ui/**/*"]
+
+# Ruff configuration
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "*.egg-info",
+]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.13
+target-version = "py313"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = [
+    "E4",    # Import errors
+    "E7",    # Statement errors
+    "E9",    # Runtime errors
+    "F",     # Pyflakes
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "PIE",   # flake8-pie
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+]
+
+ignore = [
+    "N999",   # Invalid module name (for __init__.py files)
+    "N802",   # Function name should be lowercase (Qt methods use camelCase)
+    "N803",   # Argument name should be lowercase (Qt arguments use camelCase)
+    "N815",   # Variable in class scope should not be mixedCase (Qt signals use camelCase)
+    "A001",   # Variable is shadowing a Python builtin (common in compatibility modules)
+    "A003",   # Class attribute shadows built-in
+    "A004",   # Import is shadowing a Python builtin (common in compatibility modules)
+    "B007",   # Loop control variable not used within loop body (common in os.walk)
+    "B008",   # Function call in default argument
+    "E402",   # Module level import not at top of file (some legacy code patterns)
+    "E711",   # Comparison to None should use is/is not (some legacy patterns)
+    "E722",   # Do not use bare except (legacy error handling patterns)
+    "F401",   # Module imported but unused (conditional imports for different platforms)
+    "F403",   # Star import used (Qt widgets commonly use star imports)
+    "F405",   # Name may be undefined from star imports (Qt widgets)
+    "UP006",  # Use `list` instead of `List` for type annotations
+    "UP007",  # Use `X | Y` for Union types (compatibility with older Python)
+    "UP008",  # Use `super()` instead of `super(__class__, self)` (Qt compatibility)
+    "UP031",  # Use format specifiers instead of % format (legacy code)
+    "RET504", # Unnecessary variable assignment before return
+    "SIM102", # Use single if statement instead of nested (readability preference)
+    "SIM105", # Use contextlib.suppress instead of try-except-pass (readability preference)
+    "SIM108", # Use ternary operator instead of if-else-block
+    "SIM115", # Use context manager for opening files (legacy patterns)
+    "SIM212", # Use X if X else Y instead of Y if not X else X (readability preference)
+    "C408",   # Unnecessary dict() call (legacy patterns)
+    "N806",   # Variable in function should be lowercase (Qt variable names)
+    "N813",   # Camelcase imported as lowercase (legacy imports like cPickle)
+    "N816",   # Variable in global scope should not be mixedCase (struct variables)
+    "N818",   # Exception name should be named with an Error suffix (legacy exceptions)
+    "F821",   # Undefined name (legacy code may have missing imports)
+    "F841",   # Local variable is assigned to but never used (legacy code patterns)
+    "B006",   # Do not use mutable data structures for argument defaults (legacy patterns)
+    "B904",   # Within except clause, raise exceptions with raise ... from err (legacy patterns)
+    "UP028",  # Replace yield over for loop with yield from (legacy patterns)
+    "UP030",  # Use implicit references for positional format fields (legacy patterns)
+    "C401",   # Unnecessary generator (rewrite as a set comprehension)
+    "C405",   # Unnecessary tuple/list literal (rewrite as a set literal)
+    "C416",   # Unnecessary list comprehension (rewrite using list())
+    "F811",   # Redefinition of unused variable (legacy code patterns)
+    "N801",   # Class name should use CapWords convention (legacy naming)
+    "PIE810", # Call endswith once with a tuple (minor optimization)
+    "SIM112", # Use capitalized environment variable (platform-specific variables)
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+known-first-party = ["ldoce5viewer"]

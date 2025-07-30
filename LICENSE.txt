@@ -8,4 +8,3 @@ An implementaiton of cdb (./ldoce5viewer/utils/cdb.py):
 Whoosh (./ldoce5viewer/whoosh/):
     by Matt Chaput
     (two-clause) BSD License
-
