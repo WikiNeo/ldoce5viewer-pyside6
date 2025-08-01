@@ -897,9 +897,36 @@ class MainWindow(QMainWindow):
         autoplayback = get_config().get("autoPronPlayback", None)
         if autoplayback:
             # WebEngine doesn't have mainFrame().metaData() like WebKit
-            # This functionality would need to be implemented differently
-            # For now, we'll skip this feature
-            pass
+            # Use JavaScript to extract pronunciation metadata from the page
+            if autoplayback == "US":
+                js_code = """
+                (function() {
+                    var meta = document.querySelector('meta[name="us_pron"]');
+                    return meta ? meta.getAttribute('content') : null;
+                })();
+                """
+            elif autoplayback == "GB":
+                js_code = """
+                (function() {
+                    var meta = document.querySelector('meta[name="gb_pron"]');
+                    return meta ? meta.getAttribute('content') : null;
+                })();
+                """
+            else:
+                return
+
+            def handle_pron_result(pron_file):
+                if pron_file:
+                    if autoplayback == "US":
+                        audio_path = f"/us_hwd_pron/{pron_file}"
+                    else:  # GB
+                        audio_path = f"/gb_hwd_pron/{pron_file}"
+                    logger.debug("Auto-playing pronunciation: %s", audio_path)
+                    self._playbackAudio(audio_path)
+                else:
+                    logger.debug("No pronunciation metadata found for %s", autoplayback)
+
+            self._ui.webView.page().runJavaScript(js_code, handle_pron_result)
 
     def _onAutoPronChanged(self, action):
         config = get_config()

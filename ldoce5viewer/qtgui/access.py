@@ -386,8 +386,8 @@ def register_url_schemes():
     for scheme_name in schemes:
         scheme = QWebEngineUrlScheme(scheme_name.encode("utf-8"))
         scheme.setFlags(
-            QWebEngineUrlScheme.LocalAccessAllowed
-            | QWebEngineUrlScheme.LocalScheme
-            | QWebEngineUrlScheme.ContentSecurityPolicyIgnored
+            QWebEngineUrlScheme.LocalAccessAllowed  # Allow local file access
+            | QWebEngineUrlScheme.LocalScheme  # Mark as local scheme
+            | QWebEngineUrlScheme.ContentSecurityPolicyIgnored  # Bypass CSP
         )
         QWebEngineUrlScheme.registerScheme(scheme)
