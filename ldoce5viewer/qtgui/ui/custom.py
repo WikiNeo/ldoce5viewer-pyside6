@@ -244,7 +244,7 @@ class ListWidget(QListWidget):
 
 
 class CustomWebEnginePage(QWebEnginePage):
-    """Custom WebEngine page that intercepts audio navigation requests"""
+    """Custom WebEngine page that intercepts audio and lookup navigation requests"""
 
     def __init__(self, parent=None):
         super(CustomWebEnginePage, self).__init__(parent)
@@ -255,7 +255,7 @@ class CustomWebEnginePage(QWebEnginePage):
         self._main_window = main_window
 
     def acceptNavigationRequest(self, url, nav_type, isMainFrame):
-        """Intercept navigation requests to handle audio URLs"""
+        """Intercept navigation requests to handle audio and lookup URLs"""
         scheme = url.scheme()
 
         logger.debug(
@@ -277,6 +277,20 @@ class CustomWebEnginePage(QWebEnginePage):
             else:
                 logger.warning("No main window reference available for audio playback")
             return False  # Don't navigate to the audio URL
+
+        # Handle lookup URLs by calling the main window's link click handler
+        if scheme == "lookup":
+            logger.debug("Intercepting lookup URL: %s", url.toString())
+            if self._main_window:
+                logger.debug(
+                    "Calling main window _onWebViewLinkClicked with URL: %s",
+                    url.toString(),
+                )
+                # Call the main window's _onWebViewLinkClicked method
+                self._main_window._onWebViewLinkClicked(url)
+            else:
+                logger.warning("No main window reference available for lookup handling")
+            return False  # Don't navigate to the lookup URL
 
         # Handle other custom schemes normally
         return super(CustomWebEnginePage, self).acceptNavigationRequest(
