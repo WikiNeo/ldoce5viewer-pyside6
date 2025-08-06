@@ -43,14 +43,6 @@ from .ui.custom import LineEdit, ToolButton
 from .ui.main import Ui_MainWindow
 from .utils.soundplayer import create_soundplayer
 
-sql_create_words_table = """
-    CREATE TABLE IF NOT EXISTS words (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        word TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL
-    );
-"""
-
 # Logger
 logger = logging.getLogger(__name__)
 
@@ -81,10 +73,6 @@ def _incr_delay_func(count):
 
 
 class MainWindow(QMainWindow):
-    # ------------
-    # MainWindow
-    # ------------
-
     def __init__(self):
         super(MainWindow, self).__init__()
 
@@ -1099,16 +1087,11 @@ class MainWindow(QMainWindow):
         # Restore the value of monitorClipboard
         config["monitorClipboard"] = mc_enabled
 
-    # -------
-    # Setup
-    # -------
-
     def _setup_ui(self):
         ui = self._ui = Ui_MainWindow()
         ui.setupUi(self)
 
         wv = ui.webView
-        wp = wv.page()
 
         self._ui.labelSearching.hide()
 
@@ -1200,32 +1183,9 @@ class MainWindow(QMainWindow):
         # Nav Buttons
         ui.actionNavForward.triggered.connect(self._onNavForward)
         ui.actionNavBack.triggered.connect(self._onNavBack)
-        # WebEngine doesn't have direct action changed signals
-        # wp.action(QWebPage.Forward).changed.connect(self._onNavActionChanged)
-        # wp.action(QWebPage.Back).changed.connect(self._onNavActionChanged)
 
         # ListView
         ui.listWidgetIndex.setAttribute(Qt.WA_MacShowFocusRect, False)
-
-        # WebView - WebEngine setup
-        # WebEngine doesn't have QWebSettings and QWebSecurityOrigin like WebKit
-        # WebEngine doesn't have setMaximumItemCount method for history
-        # wv.history().setMaximumItemCount(50)
-        # for name in _LOCAL_SCHEMES:
-        #     QWebSecurityOrigin.addLocalScheme(name)
-
-        # WebEngine doesn't have these actions
-        # for web_act in (QWebPage.OpenLinkInNewWindow,
-        #                 QWebPage.OpenFrameInNewWindow, QWebPage.OpenImageInNewWindow,
-        #                 QWebPage.DownloadLinkToDisk, QWebPage.DownloadImageToDisk,
-        #                 QWebPage.CopyLinkToClipboard, QWebPage.CopyImageToClipboard,
-        #                 ):
-        #     wp.action(web_act).setEnabled(False)
-        #     wp.action(web_act).setVisible(False)
-
-        # if hasattr(QWebPage, 'CopyImageUrlToClipboard'):
-        #     wp.action(QWebPage.CopyImageUrlToClipboard).setEnabled(False)
-        #     wp.action(QWebPage.CopyImageUrlToClipboard).setVisible(False)
 
         ui.menuEdit.insertAction(ui.actionFind, wv.actionCopyPlain)
         ui.menuEdit.insertSeparator(ui.actionFind)
@@ -1233,10 +1193,6 @@ class MainWindow(QMainWindow):
         self.addAction(wv.actionSearchText)
         wv.actionSearchText.setShortcut(QKeySequence("Ctrl+E"))
 
-        # Web Inspector - WebEngine has different developer tools
-        # wp.settings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
-        # wp.action(QWebPage.InspectElement).setText('Inspect Element')
-        # ui.webInspector.setPage(wp)
         self.setInspectorVisible(False)
 
         # History Menu
@@ -1258,7 +1214,6 @@ class MainWindow(QMainWindow):
         ui.lineEditFind.shiftReturnPressed.connect(self.findPrev)
         ui.listWidgetIndex.itemSelectionChanged.connect(self._onItemSelectionChanged)
         # WebEngine uses different signal names
-        # wp.linkClicked.connect(self._onWebViewLinkClicked)
         wv.loadStarted.connect(partial(self.setFindbarVisible, visible=False))
         wv.wheelWithCtrl.connect(self._onWebViewWheelWithCtrl)
         wv.urlChanged.connect(self._onUrlChanged)
@@ -1290,9 +1245,6 @@ class MainWindow(QMainWindow):
         act_conn(
             ui.actionCloseInspector, partial(self.setInspectorVisible, visible=False)
         )
-        # WebEngine doesn't have InspectElement action
-        # act_conn(wp.action(QWebPage.InspectElement),
-        #          partial(self.setInspectorVisible, visible=True))
 
         ui.actionGroupAutoPron = QActionGroup(self)
         ui.actionGroupAutoPron.addAction(ui.actionPronOff)
@@ -1327,14 +1279,7 @@ class MainWindow(QMainWindow):
         ui.actionPrint.setShortcuts(QKeySequence.Print)
         ui.actionNormalSize.setShortcut(QKeySequence("Ctrl+0"))
         ui.actionFocusLineEdit.setShortcut(QKeySequence("Ctrl+L"))
-        # WebEngine doesn't have these actions accessible like WebKit
-        # wp.action(QWebPage.SelectAll).setShortcut(QKeySequence('Ctrl+A'))
-        # wp.action(QWebPage.Back).setShortcuts([
-        #     k for k in QKeySequence.keyBindings(QKeySequence.Back)
-        #     if not k.matches(QKeySequence("Backspace"))])
-        # wp.action(QWebPage.Forward).setShortcuts(
-        #     [k for k in QKeySequence.keyBindings(QKeySequence.Forward)
-        #      if not k.matches(QKeySequence("Shift+Backspace"))])
+
         ui.actionNavBack.setShortcuts(
             [
                 k
@@ -1360,16 +1305,19 @@ class MainWindow(QMainWindow):
         self._onNavActionChanged()
 
     def _setup_sqlite(self):
+        sql_create_words_table = """
+            CREATE TABLE IF NOT EXISTS words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL
+            );
+        """
         db_path = os.path.join(
             os.path.expanduser("~"), ".local/share/ldoce5viewer/ldoce5.db"
         )
         self.con = sqlite3.connect(db_path)
         self.cur = self.con.cursor()
         self.cur.execute(sql_create_words_table)
-
-    # ----------------
-    # Configurations
-    # ----------------
 
     def _restore_from_config(self):
         ui = self._ui
