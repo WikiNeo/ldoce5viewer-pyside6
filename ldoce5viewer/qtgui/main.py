@@ -690,9 +690,25 @@ class MainWindow(QMainWindow):
         if not self._valid_word(word):
             return
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.cur.execute(
-            "INSERT OR REPLACE INTO words (word, created_at) values(?,?)", (word, now)
-        )
+
+        # Check if word exists and get current count
+        self.cur.execute("SELECT count FROM words WHERE word = ?", (word,))
+        result = self.cur.fetchone()
+
+        if result:
+            # Word exists, increment count and update timestamp
+            new_count = result[0] + 1
+            self.cur.execute(
+                "UPDATE words SET count = ?, created_at = ? WHERE word = ?",
+                (new_count, now, word),
+            )
+        else:
+            # New word, insert with count = 1
+            self.cur.execute(
+                "INSERT INTO words (word, created_at, count) VALUES (?, ?, 1)",
+                (word, now),
+            )
+
         self.con.commit()
 
     def _onLoadFinished(self, succeeded):
@@ -1309,7 +1325,8 @@ class MainWindow(QMainWindow):
             CREATE TABLE IF NOT EXISTS words (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 word TEXT NOT NULL UNIQUE,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                count INTEGER DEFAULT 1
             );
         """
         db_path = os.path.join(
@@ -1318,6 +1335,13 @@ class MainWindow(QMainWindow):
         self.con = sqlite3.connect(db_path)
         self.cur = self.con.cursor()
         self.cur.execute(sql_create_words_table)
+
+        # Add count column to existing tables if it doesn't exist
+        try:
+            self.cur.execute("ALTER TABLE words ADD COLUMN count INTEGER DEFAULT 1")
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
 
     def _restore_from_config(self):
         ui = self._ui
