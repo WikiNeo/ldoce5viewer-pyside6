@@ -330,6 +330,15 @@ class WebView(QWebEngineView):
         self.__onSelectionChanged()
         self._actionDownloadAudio = QAction("Download mp3", self)
 
+        # Add copy as markdown action
+        self._actionCopyMarkdown = QAction(self)
+        self._actionCopyMarkdown.setText("Copy as Markdown")
+        if sys.platform != "darwin":
+            self._actionCopyMarkdown.setIcon(
+                QIcon.fromTheme("edit-copy", QIcon(":/icons/edit-copy.png"))
+            )
+        self._actionCopyMarkdown.triggered.connect(self._copyAsMarkdown)
+
     def set_main_window(self, main_window):
         """Set reference to main window for audio playback"""
         self._main_window = main_window
@@ -344,11 +353,254 @@ class WebView(QWebEngineView):
 
         self.page().runJavaScript("window.getSelection().toString()", handle_text)
 
+    def _copyAsMarkdown(self):
+        # Get the full page HTML and convert to markdown
+        def handle_html(html):
+            try:
+                markdown_text = self._html_to_markdown(html)
+
+                # Additional safety check - remove any remaining thesaurus content
+                # This is a final failsafe in case something slipped through
+                import re
+
+                lines = markdown_text.split("\n")
+                cleaned_lines = []
+                for line in lines:
+                    if not re.search(r"thesaurus", line, re.IGNORECASE):
+                        cleaned_lines.append(line)
+                markdown_text = "\n".join(cleaned_lines)
+
+                # Clean up any extra whitespace from line removal
+                markdown_text = re.sub(r"\n\s*\n\s*\n+", "\n\n", markdown_text)
+                markdown_text = markdown_text.strip()
+
+                QApplication.clipboard().setText(markdown_text)
+                # Optionally show a status message
+                if hasattr(self, "_main_window") and self._main_window:
+                    # Could add a status bar message here if needed
+                    pass
+            except Exception as e:
+                # Fallback to plain text if conversion fails
+                self.page().runJavaScript(
+                    "document.body.innerText",
+                    lambda text: QApplication.clipboard().setText(
+                        f"# Definition\n\n{text.strip()}"
+                    ),
+                )
+
+        self.page().runJavaScript("document.documentElement.outerHTML", handle_html)
+
     def selectedText(self):
         # Compatibility method for WebKit API
         # Note: This is async in WebEngine, so we return empty string
         # The actual copy functionality is handled by _copyAsPlainText
         return ""
+
+    def _html_to_markdown(self, html):
+        """Convert HTML content to markdown format"""
+        import re
+        from html import unescape
+
+        # Remove HTML comments and script/style tags
+        html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
+        html = re.sub(
+            r"<(script|style)[^>]*>.*?</\1>", "", html, flags=re.DOTALL | re.IGNORECASE
+        )
+
+        # Extract the main content (usually in body)
+        body_match = re.search(
+            r"<body[^>]*>(.*?)</body>", html, flags=re.DOTALL | re.IGNORECASE
+        )
+        if body_match:
+            html = body_match.group(1)
+
+        # Remove unwanted sections before processing
+        # Remove entire Thesaurus section including headers and content
+        html = re.sub(
+            r"<h1[^>]*>\s*#?\s*Thesaurus\s*</h1>.*?(?=<h1|<h2|<div[^>]*class[^>]*entry|$)",
+            "",
+            html,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+
+        # Remove specific unwanted links and their containers
+        html = re.sub(
+            r'<a[^>]*href="[^"]*"[^>]*>Activator</a>', "", html, flags=re.IGNORECASE
+        )
+        html = re.sub(
+            r'<a[^>]*href="[^"]*"[^>]*>Other Dicts?</a>', "", html, flags=re.IGNORECASE
+        )
+        html = re.sub(
+            r'<a[^>]*href="[^"]*"[^>]*>Corpus</a>', "", html, flags=re.IGNORECASE
+        )
+
+        # Remove Example Bank text
+        html = re.sub(r"<p[^>]*>\s*Example Bank\s*</p>", "", html, flags=re.IGNORECASE)
+
+        # Remove list items containing these links or empty list items
+        html = re.sub(
+            r"<li[^>]*>.*?(Activator|Other Dicts?|Corpus).*?</li>",
+            "",
+            html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        html = re.sub(
+            r"<li[^>]*>\s*</li>", "", html, flags=re.IGNORECASE
+        )  # Remove empty list items
+
+        # Remove empty lists after removing items
+        html = re.sub(r"<ul[^>]*>\s*</ul>", "", html, flags=re.IGNORECASE)
+        html = re.sub(r"<ol[^>]*>\s*</ol>", "", html, flags=re.IGNORECASE)
+
+        # Remove audio links but preserve the text content around them
+        # Pattern: [](audio:///path/to/audio.mp3) -> remove completely
+        html = re.sub(r"\[\]\(audio:///[^)]+\)", "", html)
+
+        # Remove any remaining audio-related links
+        html = re.sub(
+            r'<a[^>]*href="audio://[^"]*"[^>]*>.*?</a>', "", html, flags=re.IGNORECASE
+        )
+
+        # Convert common HTML elements to markdown
+        markdown = html
+
+        # Headers
+        markdown = re.sub(
+            r"<h1[^>]*>(.*?)</h1>", r"# \1\n\n", markdown, flags=re.IGNORECASE
+        )
+        markdown = re.sub(
+            r"<h2[^>]*>(.*?)</h2>", r"## \1\n\n", markdown, flags=re.IGNORECASE
+        )
+        markdown = re.sub(
+            r"<h3[^>]*>(.*?)</h3>", r"### \1\n\n", markdown, flags=re.IGNORECASE
+        )
+        markdown = re.sub(
+            r"<h4[^>]*>(.*?)</h4>", r"#### \1\n\n", markdown, flags=re.IGNORECASE
+        )
+
+        # Bold and italic
+        markdown = re.sub(
+            r"<(strong|b)[^>]*>(.*?)</\1>", r"**\2**", markdown, flags=re.IGNORECASE
+        )
+        markdown = re.sub(
+            r"<(em|i)[^>]*>(.*?)</\1>", r"*\2*", markdown, flags=re.IGNORECASE
+        )
+
+        # Links (but skip audio links which should already be removed)
+        markdown = re.sub(
+            r'<a[^>]*href=["\'](?!audio:)([^"\'>]*)["\'][^>]*>(.*?)</a>',
+            r"[\2](\1)",
+            markdown,
+            flags=re.IGNORECASE,
+        )
+
+        # Lists
+        markdown = re.sub(r"<ul[^>]*>", "\n", markdown, flags=re.IGNORECASE)
+        markdown = re.sub(r"</ul>", "\n", markdown, flags=re.IGNORECASE)
+        markdown = re.sub(r"<ol[^>]*>", "\n", markdown, flags=re.IGNORECASE)
+        markdown = re.sub(r"</ol>", "\n", markdown, flags=re.IGNORECASE)
+        markdown = re.sub(
+            r"<li[^>]*>(.*?)</li>", r"- \1\n", markdown, flags=re.IGNORECASE
+        )
+
+        # Paragraphs and line breaks
+        markdown = re.sub(
+            r"<p[^>]*>(.*?)</p>", r"\1\n\n", markdown, flags=re.IGNORECASE
+        )
+        markdown = re.sub(r"<br[^>]*/?>", "\n", markdown, flags=re.IGNORECASE)
+
+        # Divs and spans - just remove tags but keep content
+        markdown = re.sub(
+            r"<div[^>]*>(.*?)</div>", r"\1\n", markdown, flags=re.IGNORECASE | re.DOTALL
+        )
+        markdown = re.sub(
+            r"<span[^>]*>(.*?)</span>", r"\1", markdown, flags=re.IGNORECASE
+        )
+
+        # Remove any remaining HTML tags
+        markdown = re.sub(r"<[^>]+>", "", markdown)
+
+        # Decode HTML entities
+        markdown = unescape(markdown)
+
+        # Clean up specific unwanted text patterns that might remain
+        markdown = re.sub(
+            r"^-?\s*(Activator|Other Dicts?|Corpus|Example Bank)\s*$",
+            "",
+            markdown,
+            flags=re.MULTILINE | re.IGNORECASE,
+        )
+        markdown = re.sub(
+            r"^\s*-\s*(Activator|Other Dicts?|Corpus|Example Bank).*$",
+            "",
+            markdown,
+            flags=re.MULTILINE | re.IGNORECASE,
+        )
+
+        # Remove Thesaurus headers that might have slipped through (all variations)
+        markdown = re.sub(
+            r"^#+\s*Thesaurus\s*$", "", markdown, flags=re.MULTILINE | re.IGNORECASE
+        )
+        markdown = re.sub(
+            r"^#+\s*Thesaurus\s*\n", "", markdown, flags=re.MULTILINE | re.IGNORECASE
+        )
+        markdown = re.sub(
+            r"^#+\s*Thesaurus.*$", "", markdown, flags=re.MULTILINE | re.IGNORECASE
+        )
+
+        # Remove empty list items (lines with just "-" or "- ")
+        markdown = re.sub(r"^\s*-\s*$", "", markdown, flags=re.MULTILINE)
+
+        # Remove lines with just whitespace or dashes
+        markdown = re.sub(r"^\s*-+\s*$", "", markdown, flags=re.MULTILINE)
+
+        # Clean up whitespace
+        markdown = re.sub(
+            r"\n\s*\n\s*\n+", "\n\n", markdown
+        )  # Multiple newlines to double
+        markdown = re.sub(
+            r"^\s+", "", markdown, flags=re.MULTILINE
+        )  # Leading whitespace
+        markdown = re.sub(
+            r"\s+$", "", markdown, flags=re.MULTILINE
+        )  # Trailing whitespace
+        markdown = markdown.strip()
+
+        # Final aggressive cleanup of any remaining Thesaurus content
+        # Remove any lines containing "Thesaurus" (case insensitive)
+        lines = markdown.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            if not re.search(r"thesaurus", line, re.IGNORECASE):
+                cleaned_lines.append(line)
+        markdown = "\n".join(cleaned_lines)
+
+        # Final whitespace cleanup after line removal
+        markdown = re.sub(r"\n\s*\n\s*\n+", "\n\n", markdown)
+        markdown = markdown.strip()
+
+        # Add a header if content doesn't start with one AND it looks like it needs one
+        if markdown and not markdown.startswith("#"):
+            # Try to extract word from title or first meaningful text
+            first_line = markdown.split("\n")[0].strip()
+            # Only add a header if the first line looks like a word/title (not a definition)
+            # Check if it contains common definition markers like parentheses, slashes, etc.
+            if (
+                first_line
+                and len(first_line) < 50
+                and not re.search(
+                    r"[/()[\]]", first_line
+                )  # No pronunciation or grammatical markers
+                and not re.search(
+                    r"\b(noun|verb|adjective|adverb|also|British|American)\b",
+                    first_line,
+                    re.IGNORECASE,
+                )
+            ):
+                markdown = f"# {first_line}\n\n" + "\n".join(markdown.split("\n")[1:])
+            # If the content looks like it starts with a definition, don't add any header
+
+        return markdown
 
     @property
     def actionSearchText(self):
@@ -361,6 +613,10 @@ class WebView(QWebEngineView):
     @property
     def actionDownloadAudio(self):
         return self._actionDownloadAudio
+
+    @property
+    def actionCopyMarkdown(self):
+        return self._actionCopyMarkdown
 
     @property
     def audioUrlToDownload(self):
@@ -376,8 +632,9 @@ class WebView(QWebEngineView):
         # We'll create a basic context menu
         menu = QMenu(self)
 
-        # Add copy action
+        # Add copy actions
         menu.addAction(self.actionCopyPlain)
+        menu.addAction(self.actionCopyMarkdown)
 
         # Add search action if there's selected text
         # Note: We can't easily check for selected text in WebEngine

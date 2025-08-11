@@ -1135,6 +1135,19 @@ class MainWindow(QMainWindow):
         toolBar.addAction(ui.actionSearchExamples)
         toolBar.addAction(ui.actionAdvancedSearch)
 
+        # Add copy as markdown action to toolbar
+        ui.actionCopyMarkdown = QAction(self)
+        ui.actionCopyMarkdown.setToolTip("Copy Definition as Markdown")
+        ui.actionCopyMarkdown.setText("MD")
+        if sys.platform != "darwin":
+            ui.actionCopyMarkdown.setIcon(
+                QIcon.fromTheme("edit-copy", QIcon(":/icons/edit-copy.png"))
+            )
+        ui.actionCopyMarkdown.triggered.connect(
+            lambda: ui.webView.actionCopyMarkdown.trigger()
+        )
+        toolBar.addAction(ui.actionCopyMarkdown)
+
         # Icons
         def _set_icon(obj, name=None, var_suffix=""):
             if name:
