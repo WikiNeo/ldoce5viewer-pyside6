@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import sys
 from difflib import SequenceMatcher
 from functools import partial
@@ -684,7 +685,14 @@ class MainWindow(QMainWindow):
         self._ui.webView.setZoomFactor(1.05 ** config["zoomPower"])
 
     def _valid_word(self, word):
-        return len(word) > 1 and " " not in word
+        # Check basic requirements: length > 1 and no spaces
+        if len(word) <= 1 or " " in word:
+            return False
+
+        # Check that word contains only English characters
+        # Allow letters (a-z, A-Z), numbers, hyphens, and apostrophes
+        english_pattern = re.compile(r"^[a-zA-Z0-9'-]+$")
+        return bool(english_pattern.match(word))
 
     def _save_to_sqlite(self, word):
         if not self._valid_word(word):
